@@ -1,0 +1,7 @@
+{
+	"vm-ip" : "enter VM IP address, accessed with hostname -I",
+	"vm-port" : 11311,
+	"vm-override" : true,
+	"host-ip": "enter host IP address",
+	"host-override" : true
+}
