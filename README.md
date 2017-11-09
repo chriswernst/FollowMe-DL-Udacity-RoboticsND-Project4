@@ -99,5 +99,59 @@ This PID Controller is much better than PD control because it actually reaches o
 
 
 #### Gradient Descent
-
+We can attempt to optimize the Kp, Ki, and Kd parameters in a variety of ways. One popular method is using Gradient Descent!
+###
 ![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/August/5991ebb9_13-l-tuning-strategies-01/13-l-tuning-strategies-01.png)
+###
+
+##### Cascade PID Controller
+Cascaded controllers can help us execute multiple processes simultaneous. It is typical practice for the inner loop to be running at 10x the speed of the outer loop.
+###
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/August/5991eaea_07-cascade-pid-control/07-cascade-pid-control.png)
+###
+We'll now be builing our own Cascade PID Controller!
+###
+
+#### Controls Lab
+
+We'll be building from the [Controls Lab Repo!](https://github.com/udacity/RoboND-Controls-Lab)
+
+Install the Repo locally(I've done so to the Linux VM). Next, download the latest version of the Simulator for your host system ("DroneSim_OSX").
+
+Alter the file `DroneSim_OSX.app/Contents/ros_settings.txt` (to do this on OSX, right-click the package and select "Show Package Contents") so that the IP address of the VM is correct and points to the Linux VM `"vm-ip" : "192.168.30.111"` and set `"vm-override" : true`.
+
+Now, launch the application as normal from OSX.
+
+###
+
+#### Deep Learning
+
+###
+Neural Networks are at the core of Deep Learning. We'll be leveraging the **Sigmoid, or Logistic Function**, to generate a continuous prediction, where `0 < yHat < 1`. Remember, the **Sigmoid** function is `1/(1+e^-x)`
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/January/58800a83_sigmoid/sigmoid.png)
+###
+
+A very simple neural network looks like this:
+###
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/February/589366f0_simple-neuron/simple-neuron.png)
+###
+
+When we have 3 or more classes, it is best to use a the **Softmax** function. 
+
+**SoftMax Function**
+###
+The softmax function is based on the exponential function. In the numerator we have `e**score`; and in the denominator, we have the summation of `e**score` for each of the observations: `e**score(1)` + `e**score(2)` + `...` + `e**score(n)`
+
+###
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/February/58938e9e_softmax-math/softmax-math.png)
+###
+
+
+
+
+
+
+
+
+
+
