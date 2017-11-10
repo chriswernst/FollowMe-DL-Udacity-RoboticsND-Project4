@@ -136,7 +136,8 @@ A very simple neural network looks like this:
 ![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/February/589366f0_simple-neuron/simple-neuron.png)
 ###
 
-When we have 3 or more classes, it is best to use a the **Softmax** function. 
+Sigmoid is great for when we need to determine a Yes/No classification problem--1 output layers. But When we have 3 or more classes, it is best to use the **Softmax** function. 
+###
 
 **SoftMax Function**
 ###
@@ -146,12 +147,25 @@ The softmax function is based on the exponential function. In the numerator we h
 ![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/February/58938e9e_softmax-math/softmax-math.png)
 ###
 
+###
+**Logistic Regression**
+`logistic_regression_explanation` is how we derived the following graph:
+###
+![alt text](https://github.com/chriswernst/FollowMe-DL-Udacity-RoboticsND-Project4/blob/master/images/gradientDescentLearning.png?raw=true)
+###
+The data is made up and comes from `perceptron.csv`
 
 
 
+##### TensorFlow
 
+We'll be harnessing the Google Developed, **TensorFlow** to execute our Deep Learning algorithms:
+###
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/October/58116cd8_maxresdefault/maxresdefault.jpg)
 
-
+###
+First, we'll test it on the English alphabet a-j, in the dataset **notMNIST**:
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/October/58051e40_notmnist/notmnist.png)
 
 
 
