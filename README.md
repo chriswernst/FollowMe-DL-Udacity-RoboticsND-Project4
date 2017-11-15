@@ -127,7 +127,15 @@ Now, launch the application as normal from OSX.
 #### Deep Learning
 
 ###
-Neural Networks are at the core of Deep Learning. We'll be leveraging the **Sigmoid, or Logistic Function**, to generate a continuous prediction, where `0 < yHat < 1`. Remember, the **Sigmoid** function is `1/(1+e^-x)`
+Neural Networks, or multilayer Perceptron(MLP), are at the core of Deep Learning. A Deep Neural Network, is what makes the learning *Deep*. This means the neural networks have more than 1 hidden layer, like this: 
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/March/58db494a_karpathy-network/karpathy-network.png)
+###
+
+Here is a really cool application of Deep Learning called style transfer!
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/November/59f92ba0_cat/cat.png)
+
+
+We'll be leveraging the **Sigmoid, or Logistic Function**, to generate a continuous prediction, where `0 < yHat < 1`. Remember, the **Sigmoid** function is `1/(1+e^-x)`
 ![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/January/58800a83_sigmoid/sigmoid.png)
 ###
 
@@ -156,7 +164,7 @@ The softmax function is based on the exponential function. In the numerator we h
 The data is made up and comes from `perceptron.csv`
 
 
-
+###
 ##### TensorFlow
 
 We'll be harnessing the Google Developed, **TensorFlow** to execute our Deep Learning algorithms:
@@ -166,6 +174,74 @@ We'll be harnessing the Google Developed, **TensorFlow** to execute our Deep Lea
 ###
 First, we'll test it on the English alphabet a-j, in the dataset **notMNIST**:
 ![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/October/58051e40_notmnist/notmnist.png)
+
+###
+
+##### Convolutional Neural Networks
+###
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/58377d67_vlcsnap-2016-11-24-15h52m47s438/vlcsnap-2016-11-24-15h52m47s438.png)
+
+###
+
+
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/581a58be_convolution-schematic/convolution-schematic.gif)
+
+
+###
+
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/December/5840fe04_retriever-patch-shifted/retriever-patch-shifted.png)
+
+###
+We can add zero padding to our image so we don't lose dimensionality
+###
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/5837d4ee_screen-shot-2016-11-24-at-10.05.46-pm/screen-shot-2016-11-24-at-10.05.46-pm.png)
+
+###
+
+Here is an example of what the CNN sees in each layer:
+
+**Layer 1**
+The first layer can detect diagonal lines(+45,-45)
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/583cbd42_layer-1-grid/layer-1-grid.png)
+### 
+Even though they have different colors and textures
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/583cbace_grid-layer-1/grid-layer-1.png)
+
+###
+**Layer 2**
+Layer 2 is able to detect more complex shapes such as circles and stripes
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/583780f3_screen-shot-2016-11-24-at-12.09.02-pm/screen-shot-2016-11-24-at-12.09.02-pm.png)
+
+###
+**Layer 3**
+The third layer is able to pick out even more complex combinations of features from layer 2:
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/5837811f_screen-shot-2016-11-24-at-12.09.24-pm/screen-shot-2016-11-24-at-12.09.24-pm.png)
+
+###
+**Layer 4/5**
+The fifth and final layer picks out and groups these complex shapes together to form the highest order items we care about:
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/58378151_screen-shot-2016-11-24-at-12.08.11-pm/screen-shot-2016-11-24-at-12.08.11-pm.png)
+
+###
+###### CNN Layer Architecture
+
+###
+LENET-5, Yan Lecun - 1998
+###
+![alt text](https://www.researchgate.net/profile/Haohan_Wang/publication/282997080/figure/fig10/AS:305939199610894@1449952997905/Figure-10-Architecture-of-LeNet-5-one-of-the-first-initial-architectures-of-CNN.png)
+
+
+###
+ALEXNET -  Alex Krizhevsky - 2012
+###
+![alt text](https://kratzert.github.io/images/finetune_alexnet/alexnet.png)
+
+
+###### Suggestions for CNNs
+From the Udacity Lecture: "We suggest you start off with a simple implementation by using a single convolutional layer with max-pooling, and a single fully-connected layer. Observe the loss and validation accuracy values you obtain. Then slowly refine your model by adding more layers, dropouts for regularization, tuning your hyperparameters etc. to achieve a good, high level of accuracy on your validation and test sets."
+
+
+
 
 
 
