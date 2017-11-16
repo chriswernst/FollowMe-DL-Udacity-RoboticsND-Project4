@@ -5,6 +5,7 @@
 ###### November 2017
 
 ###
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/September/59b9b854_following/following.png)
 ###
 
 ### Overview
@@ -17,17 +18,13 @@
 
 ##### Specifically, the objectives of this project are to:
 
-**1.** 
+**1.** Analyze a stream of images coming from our front-facing camera on the drone
 ###
-**2.** 
+**2.** Classify each pixel using a Fully Convolutional Neural Network
 ###
-**3.** 
+**3.** Locate our target in the pixels
 ###
-**4.** 
-###
-**5.** 
-###
-**6.** 
+**4.** Follow the target
 ###
 ###
 
@@ -48,9 +45,70 @@ This **README** is broken into the following sections: **Environment Setup, Code
 
 ### Environment Setup
 ###
-*To be filled in*
+This project will require `Python 3.5 64-bit` with anaconda, and `tensorflow 1.2.1`. Assuming the conda environment you deploy with Python 3.5 is called `RoboND`, install the required dependencies with:
+```
+$ source activate RoboND
+$ pip install tensorflow==1.2.1
+$ pip install socketIO-client
+$ pip install transforms3d
+$ pip install PyQt5
+$ pip install pyqtgraph
+```
 ###
+This will install the CPU version of `tensorflow` only.
+###
+
+Clone the project repository:
+```
+$ git clone https://github.com/udacity/RoboND-DeepLearning-Project.git
+```
+
+###
+
+Download the simulator [here](https://github.com/udacity/RoboND-DeepLearning-Project/releases/tag/v1.2.2)
+
+###
+Download the Data:
+
+[Training Data](https://s3-us-west-1.amazonaws.com/udacity-robotics/Deep+Learning+Data/Lab/train.zip)
+[Validation Data](https://s3-us-west-1.amazonaws.com/udacity-robotics/Deep+Learning+Data/Lab/validation.zip)
+[Sample Evaluation Data](https://s3-us-west-1.amazonaws.com/udacity-robotics/Deep+Learning+Data/Project/sample_evaluation_data.zip)
+
+###
+
+
+#### AWS Setup
+
+A good walkthrough is [here](https://towardsdatascience.com/setting-up-and-using-jupyter-notebooks-on-aws-61a9648db6c5) and the video of it is [here](https://www.youtube.com/watch?time_continue=160&v=q1vVedHbkAY)
+
+
+First, change directory to where `.pem` file is. Then:
+```
+ssh -i "yourAWSkey.pem" ubuntu@ec2-54-202-123-251.us-west-2.compute.amazonaws.com
+```
+Now, Launch a jupyter notebook:
+```
+jupyter notebook --ip='*' --port=8888 --no-browser
+```
+
+Now, open a new terminal that is pointing locally, and type:
+```
+ssh -i "yourAWSkey.pem" -L 443:127.0.0.1:8888 ubuntu@ec2-54-202-123-251.us-west-2.compute.amazonaws.com
+```
+
+Now, we should be able to navigate locally on the browser, and type:
+```
+https://127.0.0.1
+```
+
+
+
+
 ### Code Analysis
+
+###
+
+
 
 #### PID Controller
 Proportional, Integral, and Derivative control is what we'll be using to control our quad copter.
@@ -179,6 +237,11 @@ First, we'll test it on the English alphabet a-j, in the dataset **notMNIST**:
 
 ##### Convolutional Neural Networks
 ###
+
+
+![alt text](https://cdn-images-1.medium.com/max/1200/1*1okwhewf5KCtIPaFib4XaA.gif)
+
+###
 ![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/58377d67_vlcsnap-2016-11-24-15h52m47s438/vlcsnap-2016-11-24-15h52m47s438.png)
 
 ###
@@ -239,6 +302,32 @@ ALEXNET -  Alex Krizhevsky - 2012
 
 ###### Suggestions for CNNs
 From the Udacity Lecture: "We suggest you start off with a simple implementation by using a single convolutional layer with max-pooling, and a single fully-connected layer. Observe the loss and validation accuracy values you obtain. Then slowly refine your model by adding more layers, dropouts for regularization, tuning your hyperparameters etc. to achieve a good, high level of accuracy on your validation and test sets."
+###
+
+
+##### Fully Convolutional Neural Networks
+
+FCNs have 2 parts -  encoder, and decoder:
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/September/59c7cad3_fcn/fcn.png)
+
+###
+
+Dialated Convolutions(aka Atrous Convolutions):
+
+![alt text](https://cdn-images-1.medium.com/max/1200/1*SVkgHoFoiMZkjy54zM_SUw.gif)
+*2D convolution using a 3 kernel with a dilation rate of 2 and no padding*
+
+###
+Transposed Convolutions(Or Deconvolutions):
+![alt text](https://cdn-images-1.medium.com/max/1200/1*BMngs93_rm2_BpJFH2mS0Q.gif)
+*2D convolution with no padding, stride of 2 and kernel of 3*
+
+
+###
+![alt text](https://cdn-images-1.medium.com/max/1200/1*Lpn4nag_KRMfGkx1k6bV-g.gif)
+*Transposed 2D convolution with no padding, stride of 2 and kernel of 3*
+
+
 
 
 
