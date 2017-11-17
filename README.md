@@ -13,8 +13,7 @@
 ###### The goal of this project is to program a Quadcopter to identify a target and follow it.
 ###
 ###
-***(Click the image for a video of the final result)***
-[!][Click for the final project video](UPDATE with URL)](https://youtu.be/v3lSNYWOniU)
+
 
 ##### Specifically, the objectives of this project are to:
 
@@ -22,22 +21,22 @@
 ###
 **2.** Classify each pixel using a Fully Convolutional Neural Network
 ###
-**3.** Locate our target in the pixels
+**3.** Locate our target(the 'hero'/lady in red) in the pixels
 ###
-**4.** Follow the target
+**4.** Follow the target with the Quadcopter
 ###
-###
-
-
 ###
 
-We operate the quadcopter through **ROS Kinetic** (ran through Linux Ubuntu 16.0) and commands are written in **Python**.
 
-The code driving this project and interacting with ROS can be found at `TBD.py`
+###
+
+We operate the quadcopter through **QuadSim** (ran locally).
+
+The code for the segmentation network can be found at `model_training.ipynb`
 
 *Quick note on naming convention:* `THIS_IS_A_CONSTANT` *and* `thisIsAVariable`
 
-This **README** is broken into the following sections: **Environment Setup, Code Analysis, and Debugging**.
+This **README** is broken into the following sections: **Environment Setup, Code Analysis, Future Enhancements, and Background Information**.
 
 ###
 ###
@@ -78,38 +77,174 @@ Download the Data:
 
 
 #### AWS Setup
+For training, we'll harness the GPU computing resources available through AWS. We'll need `1` instance of the `px2.large`
 
-A good walkthrough is [here](https://towardsdatascience.com/setting-up-and-using-jupyter-notebooks-on-aws-61a9648db6c5) and the video of it is [here](https://www.youtube.com/watch?time_continue=160&v=q1vVedHbkAY)
+A good walkthrough of how to ssh into the AWS GPU and run a Jupyter notebook is [here](https://towardsdatascience.com/setting-up-and-using-jupyter-notebooks-on-aws-61a9648db6c5) and the video of it is [here.](https://www.youtube.com/watch?time_continue=160&v=q1vVedHbkAY)
 
-
-First, change directory to where `.pem` file is. Then:
+##### Steps to ssh into AWS Linux Machine:
+First, change your directory to where `.pem` file is. Then, in a terminal:
 ```
 ssh -i "yourAWSkey.pem" ubuntu@ec2-54-202-123-251.us-west-2.compute.amazonaws.com
 ```
+Where the `ec2-XX-XXX-XXX-XXX.us-west-2.compute.amazonaws.com` is the Public DNS (IPv4) can be found on the AWS EC2 management page. *Note, this DNS address changes each time you start an instance!*
+
 Now, Launch a jupyter notebook:
 ```
 jupyter notebook --ip='*' --port=8888 --no-browser
 ```
 
-Now, open a new terminal that is pointing locally, and type:
+Open a new terminal that is pointing locally, and type:
 ```
-ssh -i "yourAWSkey.pem" -L 443:127.0.0.1:8888 ubuntu@ec2-54-202-123-251.us-west-2.compute.amazonaws.com
-```
-
-Now, we should be able to navigate locally on the browser, and type:
-```
-https://127.0.0.1
+ssh -i "yourAWSkey.pem" -L 8212:localhost:8888 ubuntu@ec2-54-202-123-251.us-west-2.compute.amazonaws.com
 ```
 
+Next, we should be able to navigate locally on the browser, and type:
+```
+localhost:8888
+```
 
+Finally, launch the the `model_training.ipynb`
 
-
+###
 ### Code Analysis
+The `model_training.ipynb` file is broken into **6** primary sections, so that is how I will step through them.
+###
+##### Data Collection
+Although I collected some of my own data, I opted to start with the images provided to us by Udacity and see what accuracy I could get. Again, those can be found [here](https://s3-us-west-1.amazonaws.com/udacity-robotics/Deep+Learning+Data/Lab/train.zip),  [here](https://s3-us-west-1.amazonaws.com/udacity-robotics/Deep+Learning+Data/Lab/validation.zip), and [here](https://s3-us-west-1.amazonaws.com/udacity-robotics/Deep+Learning+Data/Project/sample_evaluation_data.zip).
+###
+##### FCN Layers
+###
+###### Separable Convolutions
+We were provided functions for separable convolutional layers, as well as fully connected convolutional layers for the `1x1`:
+```
+def separable_conv2d_batchnorm(input_layer, filters, strides=1):
+    output_layer = SeparableConv2DKeras(filters=filters,kernel_size=3, strides=strides,
+                             padding='same', activation='relu')(input_layer)
+    
+    output_layer = layers.BatchNormalization()(output_layer) 
+    return output_layer
 
+def conv2d_batchnorm(input_layer, filters, kernel_size=3, strides=1):
+    output_layer = layers.Conv2D(filters=filters, kernel_size=kernel_size, strides=strides, 
+                      padding='same', activation='relu')(input_layer)
+    
+    output_layer = layers.BatchNormalization()(output_layer) 
+    return output_layer
+```
+###
+###### Bilinear Upsampling
+###
+We're also provided an upsampling function that we'll use in the decoder layer:
+```
+def bilinear_upsample(input_layer):
+    output_layer = BilinearUpSampling2D((2,2))(input_layer)
+    return output_layer
+```
+Here's a good dipiction of how that works:
+###
+![alt text](https://www.researchgate.net/profile/Patrick_Van_der_Smagt2/publication/269577174/figure/fig2/AS:392180591022087@1470514547147/Fig-2-Upsampling-an-image-by-a-factor-of-2-Every-pixel-in-the-low-resolution-image-is.png)
+###
+##### Build the Model
+###
+###### Encoder Block
+Harnessing the `separable_conv2d_batchnorm()` function, this was quite straight forward.
+```
+def encoder_block(input_layer, filters, strides):
+    output_layer = separable_conv2d_batchnorm(input_layer, filters, strides)
+    return output_layer
+```
+
+###### Decoder Block
+```
+def decoder_block(small_ip_layer, large_ip_layer, filters):
+    
+    # Upsample the small input layer using the bilinear_upsample() function.
+    upsample = bilinear_upsample(small_ip_layer)
+    
+    # Concatenate the upsampled and large input layers using layers.concatenate
+    concat_layer = layers.concatenate([upsample, large_ip_layer])
+
+    # Add some number of separable convolution layers
+    
+    temp_layer = separable_conv2d_batchnorm(concat_layer, filters)
+    output_layer = separable_conv2d_batchnorm(temp_layer, filters)
+    
+    return output_layer
+```
+###
+###### Model
+###
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/September/59c7cad3_fcn/fcn.png)
+Since our incoming image is `256x256` pixels (which is nicely divisible by 8), it makes sense to build our network as a 5 layer model
+###
+Encoder:
+![alt text](https://github.com/chriswernst/FollowMe-DL-Udacity-RoboticsND-Project4/blob/master/images/Encoder.JPG?raw=true)
+###
+Decoder:
+![alt text](https://github.com/chriswernst/FollowMe-DL-Udacity-RoboticsND-Project4/blob/master/images/Decoder.JPG?raw=true)
+###
+```
+def fcn_model(inputs, num_classes):
+    
+    # ENCODER 
+    layer1 = encoder_block(inputs, 64, 2)
+    layer2 = encoder_block(layer1, 128, 2)
+
+    # Fully connected 1x1 Convolution layer using conv2d_batchnorm().
+    layer3 = conv2d_batchnorm(layer2, 256, kernel_size=1, strides=1)
+    
+    # Add the same number of Decoder Blocks as the number of Encoder Blocks
+    layer4 = decoder_block(layer3, layer1, 128)
+    layer5 = decoder_block(layer4, inputs, 64)
+    
+    
+    # The function returns the output layer of your model. "x" is the final layer obtained from the last decoder_block()
+    return layers.Conv2D(num_classes, 1, activation='softmax', padding='same')(layer5)
+```
+
+##### Training
+###
+###### Hyperparameters
+After trying a variety of values for `num_epochs` and having it set too high -- and therefore having training take multiple hours on AWS, I decided on the following training values:
+```
+learning_rate = 0.001
+batch_size = 64
+num_epochs = 50
+steps_per_epoch = 65
+validation_steps = 50
+workers = 120
+steps_per_epoch_check = 4132/batch_size
+print(steps_per_epoch_check)
+```
+Most of these are quite standard, but some of the noteable ones are `steps_per_epoch`, and `workers`. 
+
+I determined `steps_per_epoch` by using `steps_per_epoch_check = 4132/batch_size`, where 4132 is the number of training images. This came out to 64.XX, so I opted for `steps_per_epoch = 65`.
+
+For `workers`, I chose an arbitrarily high number, since we are, afterall, paying AWS to do the computations, I figured I should use alll of the processes they'll give me.
+
+After some tuning of parameters, starting long epochs, then stopping. My first `epoch` looked something like this:
+![alt text](https://github.com/chriswernst/FollowMe-DL-Udacity-RoboticsND-Project4/blob/master/images/epoch1.png?raw=true)
+
+After 10 `epochs`, the error was decreasing greatly, really flattening out:
+![alt text](https://github.com/chriswernst/FollowMe-DL-Udacity-RoboticsND-Project4/blob/master/images/epoch10.png?raw=true)
+
+With these parameters, anything beyond 50 epochs would be excessive and wasteful. Each epoch was running about 150-170s on average, which is much better than on my local MacBookPro of ~ 800s per epoch.
+##### Prediction
+###
+##### Evaluation
+For the first evaluation, I stopped the script after 10 epochs with 200 steps(because this would have taken all day, and cost me a lot of $$$). The loss was down to 0.03, and the `final_score` came out as **~0.395**. I was encouraged by this, so I continued training with more epochs.
+
+Next, I adjusted the steps to 65, and the number of epochs to 50 -- because this should yield decent accuracy, but not take all day.  
+
+
+###
+### Future Enhancements
 ###
 
 
-
+###
+### Background Information
+###
 #### PID Controller
 Proportional, Integral, and Derivative control is what we'll be using to control our quad copter.
 
@@ -326,10 +461,6 @@ Transposed Convolutions(Or Deconvolutions):
 ###
 ![alt text](https://cdn-images-1.medium.com/max/1200/1*Lpn4nag_KRMfGkx1k6bV-g.gif)
 *Transposed 2D convolution with no padding, stride of 2 and kernel of 3*
-
-
-
-
 
 
 
