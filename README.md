@@ -107,7 +107,7 @@ Finally, launch the the `model_training.ipynb`
 
 ###
 ### Code Analysis
-The `model_training.ipynb` file is broken into **6** primary sections, so that is how I will step through them.
+The `model_training.ipynb` file is broken into individual sections, so that is how I will step through them.
 ###
 ##### Data Collection
 Although I collected some of my own data, I opted to start with the images provided to us by Udacity and see what accuracy I could get. Again, those can be found [here](https://s3-us-west-1.amazonaws.com/udacity-robotics/Deep+Learning+Data/Lab/train.zip),  [here](https://s3-us-west-1.amazonaws.com/udacity-robotics/Deep+Learning+Data/Lab/validation.zip), and [here](https://s3-us-west-1.amazonaws.com/udacity-robotics/Deep+Learning+Data/Project/sample_evaluation_data.zip).
@@ -118,16 +118,13 @@ Although I collected some of my own data, I opted to start with the images provi
 We were provided functions for separable convolutional layers, as well as fully connected convolutional layers for the `1x1`:
 ```
 def separable_conv2d_batchnorm(input_layer, filters, strides=1):
-    output_layer = SeparableConv2DKeras(filters=filters,kernel_size=3, strides=strides,
-                             padding='same', activation='relu')(input_layer)
-    
+    output_layer = SeparableConv2DKeras(filters=filters,kernel_size=3, strides=strides,         padding='same', activation='relu')(input_layer)
     output_layer = layers.BatchNormalization()(output_layer) 
     return output_layer
 
 def conv2d_batchnorm(input_layer, filters, kernel_size=3, strides=1):
     output_layer = layers.Conv2D(filters=filters, kernel_size=kernel_size, strides=strides, 
-                      padding='same', activation='relu')(input_layer)
-    
+    padding='same', activation='relu')(input_layer)
     output_layer = layers.BatchNormalization()(output_layer) 
     return output_layer
 ```
@@ -140,7 +137,7 @@ def bilinear_upsample(input_layer):
     output_layer = BilinearUpSampling2D((2,2))(input_layer)
     return output_layer
 ```
-Here's a good dipiction of how that works:
+Here's a good dipiction of how upsampling works:
 ###
 ![alt text](https://www.researchgate.net/profile/Patrick_Van_der_Smagt2/publication/269577174/figure/fig2/AS:392180591022087@1470514547147/Fig-2-Upsampling-an-image-by-a-factor-of-2-Every-pixel-in-the-low-resolution-image-is.png)
 ###
@@ -155,6 +152,7 @@ def encoder_block(input_layer, filters, strides):
 ```
 
 ###### Decoder Block
+For the decoder block, we harness `bilinear_upsample`, concatenation with `layers.concatenate`, and the `separable_conv2d_batchnorm` function.
 ```
 def decoder_block(small_ip_layer, large_ip_layer, filters):
     
@@ -164,8 +162,7 @@ def decoder_block(small_ip_layer, large_ip_layer, filters):
     # Concatenate the upsampled and large input layers using layers.concatenate
     concat_layer = layers.concatenate([upsample, large_ip_layer])
 
-    # Add some number of separable convolution layers
-    
+    # Add separable convolution layers
     temp_layer = separable_conv2d_batchnorm(concat_layer, filters)
     output_layer = separable_conv2d_batchnorm(temp_layer, filters)
     
@@ -183,6 +180,8 @@ Encoder:
 Decoder:
 ![alt text](https://github.com/chriswernst/FollowMe-DL-Udacity-RoboticsND-Project4/blob/master/images/Decoder.JPG?raw=true)
 ###
+###
+Model:
 ```
 def fcn_model(inputs, num_classes):
     
@@ -193,12 +192,11 @@ def fcn_model(inputs, num_classes):
     # Fully connected 1x1 Convolution layer using conv2d_batchnorm().
     layer3 = conv2d_batchnorm(layer2, 256, kernel_size=1, strides=1)
     
-    # Add the same number of Decoder Blocks as the number of Encoder Blocks
+    # DECODER
     layer4 = decoder_block(layer3, layer1, 128)
     layer5 = decoder_block(layer4, inputs, 64)
     
-    
-    # The function returns the output layer of your model. "x" is the final layer obtained from the last decoder_block()
+    # OUTPUT
     return layers.Conv2D(num_classes, 1, activation='softmax', padding='same')(layer5)
 ```
 
@@ -229,23 +227,28 @@ After 10 `epochs`, the error was decreasing greatly, really flattening out:
 ![alt text](https://github.com/chriswernst/FollowMe-DL-Udacity-RoboticsND-Project4/blob/master/images/epoch10.png?raw=true)
 
 With these parameters, anything beyond 50 epochs would be excessive and wasteful. Each epoch was running about 150-170s on average, which is much better than on my local MacBookPro of ~ 800s per epoch.
-##### Prediction
 ###
 ##### Evaluation
 For the first evaluation, I stopped the script after 10 epochs with 200 steps(because this would have taken all day, and cost me a lot of $$$). The loss was down to 0.03, and the `final_score` came out as **~0.395**. I was encouraged by this, so I continued training with more epochs.
 
-Next, I adjusted the steps to 65, and the number of epochs to 50 -- because this should yield decent accuracy, but not take all day.  
+Next, I adjusted the steps to 65, and the number of epochs to 50 -- because this should yield decent accuracy, but not take all day. The `final_score` came out as **~0.43**, Success! 
 
 
 ###
 ### Future Enhancements
 ###
+First and foremost, adding data to train on would be a significant improvement.
+After we've added more images, it would be wise to increase the number of epochs, and potentially decrease the learning rate -- assuming we have a lot of time/money/computational resources.
 
+This addition of data and training time would allow the network to classify the target more accurately.
 
+In order for this Deep Neural Network to be used to follow another target: such as a cat or a dog, it would just need to be trained on a new set of data. Also, the encoder and decoder layer dimensions may have to adjusted depending on the input pixel size.
 ###
-### Background Information
 ###
-#### PID Controller
+###
+### Course Background Information
+###
+##### PID Controller
 Proportional, Integral, and Derivative control is what we'll be using to control our quad copter.
 
 **Proportional Control**
@@ -461,6 +464,10 @@ Transposed Convolutions(Or Deconvolutions):
 ###
 ![alt text](https://cdn-images-1.medium.com/max/1200/1*Lpn4nag_KRMfGkx1k6bV-g.gif)
 *Transposed 2D convolution with no padding, stride of 2 and kernel of 3*
+
+
+
+
 
 
 
