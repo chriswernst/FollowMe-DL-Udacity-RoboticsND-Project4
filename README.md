@@ -41,10 +41,10 @@ Although I collected some of my own data, I opted to start with the images provi
 ##### FCN Layers
 
 ###### Separable Convolutions
-We were provided functions for separable convolutional layers, as well as fully connected convolutional layers for the `1x1`:
+We were provided functions for separable convolutional layers, as well as convolutional layers for the `1x1`:
 ```
 def separable_conv2d_batchnorm(input_layer, filters, strides=1):
-    output_layer = SeparableConv2DKeras(filters=filters,kernel_size=3, strides=strides,         padding='same', activation='relu')(input_layer)
+    output_layer = SeparableConv2DKeras(filters=filters,kernel_size=3, strides=strides, padding='same', activation='relu')(input_layer)
     output_layer = layers.BatchNormalization()(output_layer) 
     return output_layer
 
@@ -67,7 +67,16 @@ Here's a good dipiction of how upsampling works:
 
 ![alt text](https://www.researchgate.net/profile/Patrick_Van_der_Smagt2/publication/269577174/figure/fig2/AS:392180591022087@1470514547147/Fig-2-Upsampling-an-image-by-a-factor-of-2-Every-pixel-in-the-low-resolution-image-is.png)
 
+Upsampling will be crucial in the second half of our FCN in order to transform the important features we learned from encoding into the final segmented image in the output.
+
 ##### Build the Model
+Because we're challenged with the task of not just understanding **what** is in an image, but we need to figure out **where** the object is in the image, we're going to be using a network full of convolutional layers.
+
+At first glance, we might think to just put many full-scaled convolutional layers one after another. This is good intuition, but we soon find this generates too many parameters, and becomes computationally very expensive. 
+
+Instead, we'll use a method of first extracting important features through **encoding**, then upsample into an output image in **decoding**, finally assigning each pixel to one of the classes. 
+
+Of course, every method has its disadvantages, and we'll lose some specific pixels during downsampling, and upsampling, but we'll also find out that this loss is negligible, and worth the increase in speed of computation.
 
 ###### Encoder Block
 Harnessing the `separable_conv2d_batchnorm()` function, this was quite straight forward.
@@ -76,6 +85,14 @@ def encoder_block(input_layer, filters, strides):
     output_layer = separable_conv2d_batchnorm(input_layer, filters, strides)
     return output_layer
 ```
+
+###### 1x1 Convolution
+Between the Encoder Block and the Decoder block, instead of having a 2D fully connected 1x1 layer--which is something we use in a regular ConvNet for classification--we opt to use a 1x1 convolutional layer. This is done so that we preserve spatial information. Since this is a task of segmentation, it is important to keep pixel data intact so we can upsample to generate an output image. 
+
+This 1x1 convolution allows us to keep dimensionality low for the task of segmentation, without losing precious spatial data.
+
+*Our new 1x1 convolution*
+![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/September/59bb1431_1x1convolution/1x1convolution.png)
 
 ###### Decoder Block
 For the decoder block, we harness `bilinear_upsample`, concatenation with `layers.concatenate`, and the `separable_conv2d_batchnorm` function.
@@ -96,30 +113,34 @@ def decoder_block(small_ip_layer, large_ip_layer, filters):
 ```
 
 ###### Model
-I decided to start with the model architecture we used from the lecture.
 
+I decided to start with the symmetrical, 5 layer model architecture, like the one shown in the lecture. From what I've read, especially from recent research on networks like ***ResNet***, more layers are usually better, as long as they are not plain layers. But also, as networks become deeper, they take longer and longer to train. I figured 5 layers was a fair place to start. 
+
+My network resembled something like this:
 ![alt text](https://d17h27t6h515a5.cloudfront.net/topher/2017/September/59c7cad3_fcn/fcn.png)
 
 
-Encoder:
-
-Decoder:
-
-Model:
+For the first two layers, which comprise the **encoder**, and are in charge of determining the important features to extract from our input image, I chose `strides=2`, and the number of filters to be a power of 2: `2**6=64` for the first layer, then `2**7=128` for the second.
 ```
 def fcn_model(inputs, num_classes):
     
     # ENCODER 
     layer1 = encoder_block(inputs, 64, 2)
     layer2 = encoder_block(layer1, 128, 2)
-
-    # Fully connected 1x1 Convolution layer using conv2d_batchnorm().
+```
+I went all the way to `2**8=256` for the middle **1x1** convolutional layer, so that it would be **1x1x256**, and we wouldn't compromise spatial data from our image.
+```
+    # 1x1 Convolution layer using conv2d_batchnorm()
     layer3 = conv2d_batchnorm(layer2, 256, kernel_size=1, strides=1)
-    
+```
+The choice for the **decoder** was simple, in that I simply scaled back up from the middle **1x1** convolutional layer to the final output image size. In this moment, the term deconvolution feels fitting, as it is what I had in mind while building the decoder(however, I know it is a contentious term).
+```
     # DECODER
     layer4 = decoder_block(layer3, layer1, 128)
     layer5 = decoder_block(layer4, inputs, 64)
-    
+```
+We finally apply our favorite activation function, **Softmax**, to generate the scores for each of the classes:
+```
     # OUTPUT
     return layers.Conv2D(num_classes, 1, activation='softmax', padding='same')(layer5)
 ```
@@ -167,6 +188,8 @@ First and foremost, adding data to train on would be a significant improvement.
 After we've added more images, it would be wise to increase the number of epochs, and potentially decrease the learning rate -- assuming we have a lot of time/money/computational resources.
 
 This addition of data and training time would allow the network to classify the target more accurately.
+
+It also might be a smart idea to make the network deeper. From the research proven with ResNet /  GoogLeNet, adding more convolutions with skipped connections could prove to be a very good idea.
 
 In order for this Deep Neural Network to be used to follow another target: such as a cat or a dog, it would just need to be trained on a new set of data. Also, the encoder and decoder layer dimensions may have to adjusted depending on the input pixel size.
 
